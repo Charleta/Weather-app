@@ -1,37 +1,20 @@
 import { useState } from "react";
+import { useFetchHook } from "./assets/hooks/fetchHook";
 
 function App() {
   const [city, setCity] = useState("");
-  const [dataWeather, setDataWeather] = useState({});
-  const [iconWeather, setIconWeather] = useState("");
   const [isVisible, setIsVisible] = useState(false);
+  const { fetchWeather, errorMsg, dataWeather } = useFetchHook();
 
   const handleChangeCity = (e) => {
     setCity(e.target.value);
   };
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (city.trim() === "") return;
+    if (!city || city.trim() === "") return;
     console.log("Buscando clima para la ciudad:", city);
-
-    const fetchWeather = async () => {
-      const ApiKey = "b9b8ddee3cf44246a6f232054251007";
-      const api = `http://api.weatherapi.com/v1/current.json?key=${ApiKey}&q=${city}&aqi=no`;
-
-      try {
-        const response = await fetch(api);
-        const data = await response.json();
-        setDataWeather(data);
-        setIsVisible(true);
-
-        console.log(dataWeather);
-        setIconWeather(data.current.condition.icon);
-      } catch (error) {
-        console.error("Error al buscar el clima:", error);
-      }
-    };
-
-    fetchWeather();
+    await fetchWeather(city);
+    setIsVisible(true);
   };
 
   return (
@@ -47,6 +30,10 @@ function App() {
             <span className="text-[#F0F0F0]  text-4xl">App</span>
           </h1>
         </div>
+
+        {errorMsg && (
+          <p className="text-red-500 mt-4 text-center">{errorMsg}</p>
+        )}
 
         <div className="flex items-center z-10 mt-10">
           <div>
@@ -79,20 +66,18 @@ function App() {
           id="weather-info-card"
           className={`
                 fixed bottom-0 left-0 right-0
-                bg-gradient-to-t from-gray-800 to-gray-900
+                bg-gradient-to-t from-[#636262] to-[#282828]
                 text-white p-6 rounded-t-3xl shadow-2xl
                 transform transition-transform duration-700 ease-out
                 ${isVisible ? "translate-y-0" : "translate-y-full"}
             `}
         >
-          {!isVisible ? (
-            <p>Cargando...</p>
-          ) : (
+          {isVisible && dataWeather && dataWeather.location ? (
             <div className="container mx-auto">
               {/* Icono para cerrar o arrastrar la tarjeta (opcional) */}
-              {/* <div className="flex justify-center mb-4">
-              <div className="w-16 h-1.5 bg-gray-600 rounded-full"></div>
-            </div> */}
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-1.5 bg-gray-600 rounded-full"></div>
+              </div>
 
               {/* Contenido de la tarjeta del clima */}
               <div className="text-center">
@@ -119,17 +104,15 @@ function App() {
                       Viento: {dataWeather.current.wind_kph}
                     </span>
                   </div>
-                  <div className="flex items-center justify-center bg-gray-700 bg-opacity-50 p-3 rounded-xl">
-                    <span className="mr-2">⬆️</span>
-                    <span id="max-temp">Máx: {dataWeather.maxTemp}</span>
-                  </div>
-                  <div className="flex items-center justify-center bg-gray-700 bg-opacity-50 p-3 rounded-xl">
-                    <span className="mr-2">⬇️</span>
-                    <span id="min-temp">Mín: {dataWeather.minTemp}</span>
-                  </div>
                 </div>
               </div>
             </div>
+          ) : (
+            isVisible && (
+              <p className="text-center">
+                No se encontró la ciudad. Probá con otro nombre.
+              </p>
+            )
           )}
         </div>
       </div>
